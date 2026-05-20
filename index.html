@@ -260,7 +260,7 @@
     <div class="error-msg hidden" id="setup-error"></div>
     <input type="hidden" id="setup-name" value="Bao">
     <select class="field" id="setup-model" style="display:none">
-      <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (recommended)</option>
+      <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recommended)</option>
     </select>
     <button class="btn btn-primary" onclick="setupSave()">Let's go →</button>
     <p class="hint">Only needs to be done once. After this you just enter your PIN.</p>
@@ -316,9 +316,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
       <select id="model-select" onchange="setModel(this.value)">
-        <option value="claude-sonnet-4-20250514">Sonnet 4</option>
-        <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
-        <option value="claude-opus-4-20250514">Opus 4</option>
+        <option value="claude-sonnet-4-6">Sonnet 4.6</option>
+        <option value="claude-haiku-4-5">Haiku 4.5</option>
+        <option value="claude-opus-4-7">Opus 4.7</option>
       </select>
       <div class="topbar-right">
         <button id="search-toggle" onclick="toggleSearch()" title="Toggle web search">
@@ -412,7 +412,7 @@ function xorDecrypt(enc, key) {
 let currentPin = '';
 let apiKey = '';
 let userName = '';
-let currentModel = 'claude-sonnet-4-20250514';
+let currentModel = 'claude-sonnet-4-6';
 let searchEnabled = false;
 let attachedFiles = [];
 let conversations = [];
@@ -429,8 +429,13 @@ window.addEventListener('load', async () => {
     localStorage.setItem('user_name', 'Bao');
   }
   if (!localStorage.getItem('model')) {
-    localStorage.setItem('model', 'claude-sonnet-4-20250514');
+    localStorage.setItem('model', 'claude-sonnet-4-6');
   }
+  // Migrate deprecated model IDs saved by earlier versions
+  const _sm = localStorage.getItem('model');
+  if (_sm === 'claude-sonnet-4-20250514') localStorage.setItem('model', 'claude-sonnet-4-6');
+  if (_sm === 'claude-opus-4-20250514') localStorage.setItem('model', 'claude-opus-4-7');
+  if (_sm === 'claude-haiku-4-5-20251001') localStorage.setItem('model', 'claude-haiku-4-5');
   if (!localStorage.getItem('memory')) {
     localStorage.setItem('memory', "User's name is Bao.");
   }
@@ -513,7 +518,7 @@ function unlockApp() {
   }
   apiKey = xorDecrypt(encKey, currentPin);
   userName = localStorage.getItem('user_name') || 'Bao';
-  currentModel = localStorage.getItem('model') || 'claude-sonnet-4-20250514';
+  currentModel = localStorage.getItem('model') || 'claude-sonnet-4-6';
   document.getElementById('model-select').value = currentModel;
   conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
   document.getElementById('pin-screen').classList.add('hidden');
@@ -527,31 +532,31 @@ function unlockApp() {
 async function setupSave() {
   const key = document.getElementById('setup-key').value.trim();
   const errEl = document.getElementById('setup-error');
+  errEl.classList.add('hidden');
   if (!key.startsWith('sk-ant-')) {
-    errEl.textContent = 'That doesn\'t look right — it should start with sk-ant-';
+    errEl.textContent = 'Should start with sk-ant- — check and try again';
     errEl.classList.remove('hidden');
     return;
   }
-  errEl.classList.add('hidden');
-  // Validate key
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] })
-    });
-    if (r.status === 401) { errEl.textContent = 'API key not valid — double check and try again.'; errEl.classList.remove('hidden'); return; }
-  } catch(e) {}
-  localStorage.setItem('api_key_enc', xorEncrypt(key, currentPin));
-  localStorage.setItem('user_name', 'Bao');
-  localStorage.setItem('model', 'claude-sonnet-4-20250514');
-  apiKey = key;
-  userName = 'Bao';
-  currentModel = 'claude-sonnet-4-20250514';
-  document.getElementById('model-select').value = currentModel;
-  conversations = [];
-  unlockApp();
+    localStorage.setItem('api_key_enc', xorEncrypt(key, currentPin));
+    localStorage.setItem('user_name', 'Bao');
+    localStorage.setItem('model', 'claude-sonnet-4-6');
+    apiKey = key;
+    userName = 'Bao';
+    currentModel = 'claude-sonnet-4-6';
+    document.getElementById('model-select').value = 'claude-sonnet-4-6';
+    conversations = [];
+    document.getElementById('setup-screen').classList.add('hidden');
+    document.getElementById('app').style.display = 'flex';
+    renderHistory();
+    loadMemoryText();
+  } catch(e) {
+    errEl.textContent = 'Error saving: ' + e.message;
+    errEl.classList.remove('hidden');
+  }
 }
+
 
 // ── App ──
 document.getElementById('app').style.display = 'none';
@@ -667,11 +672,12 @@ function escHtml(t) {
 }
 
 function markdownToHtml(text) {
-  let h = text;
-  // Code blocks
-  h = h.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${escHtml(code.trim())}</code></pre>`);
+  // Escape ALL html first to prevent XSS, then apply markdown
+  let h = escHtml(text);
+  // Code blocks (content already escaped)
+  h = h.replace(/\`\`\`(\w*)\n?([\s\S]*?)\`\`\`/g, (_, lang, code) => `<pre><code>${code.trim()}</code></pre>`);
   // Inline code
-  h = h.replace(/`([^`\n]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
+  h = h.replace(/\`([^\`\n]+)\`/g, (_, c) => `<code>${c}</code>`);
   // Bold, italic
   h = h.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
   h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -681,35 +687,38 @@ function markdownToHtml(text) {
   h = h.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   h = h.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   // Blockquotes
-  h = h.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
-  // Lists
+  h = h.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+  // Unordered lists
   h = h.replace(/^(\s*[-*+] .+(\n\s*[-*+] .+)*)/gm, m => {
     const items = m.split('\n').filter(l => l.trim()).map(l => `<li>${l.replace(/^\s*[-*+] /, '').trim()}</li>`).join('');
     return `<ul>${items}</ul>`;
   });
+  // Ordered lists
   h = h.replace(/^(\s*\d+\. .+(\n\s*\d+\. .+)*)/gm, m => {
     const items = m.split('\n').filter(l => l.trim()).map(l => `<li>${l.replace(/^\s*\d+\. /, '').trim()}</li>`).join('');
     return `<ol>${items}</ol>`;
   });
   // HR
   h = h.replace(/^---$/gm, '<hr>');
-  // Links
-  h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // Links — only allow http(s) URLs to prevent javascript: injection
+  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
   // Paragraphs
   const lines = h.split('\n');
   const out = [];
   let inPre = false;
   for (const line of lines) {
-    if (line.startsWith('<pre>')) inPre = true;
-    if (line.startsWith('</pre>')) inPre = false;
-    if (!inPre && line.trim() && !line.startsWith('<h') && !line.startsWith('<ul') && !line.startsWith('<ol') && !line.startsWith('<li') && !line.startsWith('<blockquote') && !line.startsWith('<hr') && !line.startsWith('<pre')) {
+    if (line.includes('<pre>')) inPre = true;
+    const isBlock = line.startsWith('<h') || line.startsWith('<ul') || line.startsWith('<ol') || line.startsWith('<li') || line.startsWith('<blockquote') || line.startsWith('<hr') || line.startsWith('<pre') || line.includes('</pre>');
+    if (!inPre && line.trim() && !isBlock) {
       out.push(`<p>${line}</p>`);
     } else {
       out.push(line);
     }
+    if (line.includes('</pre>')) inPre = false;
   }
   return out.join('\n');
 }
+
 
 function renderUserMsg(text, fileNames) {
   const msgs = document.getElementById('messages');
@@ -872,10 +881,6 @@ async function sendMessage() {
   let searchUsed = false;
   let aiContentEl = null;
 
-  // Debug: show what apiKey looks like
-  const debugInfo = 'key=' + (apiKey ? apiKey.slice(0,12)+'…' : 'EMPTY') + ' pin=' + (currentPin||'EMPTY') + ' model=' + currentModel;
-  console.log('Sending:', debugInfo);
-
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -889,14 +894,9 @@ async function sendMessage() {
     });
 
     if (!res.ok) {
-      const errText = await res.text();
+      const err = await res.json().catch(() => ({}));
       hideTyping();
-      // Show full error visibly in chat
-      const errDiv = document.createElement('div');
-      errDiv.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;padding:12px;margin:8px 0;border-radius:8px;font-size:12px;font-family:monospace;word-break:break-all;color:#7f1d1d';
-      errDiv.textContent = 'HTTP ' + res.status + ' | key: ' + (apiKey ? apiKey.slice(0,12)+'…' : 'EMPTY') + ' | ' + errText.slice(0,300);
-      document.getElementById('messages').appendChild(errDiv);
-      document.getElementById('messages').scrollTop = 99999;
+      showToast(err.error?.message || `Error ${res.status}`);
       isStreaming = false;
       document.getElementById('send-btn').disabled = false;
       return;
@@ -944,11 +944,7 @@ async function sendMessage() {
 
   } catch(e) {
     hideTyping();
-    const errDiv = document.createElement('div');
-    errDiv.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;padding:12px;margin:8px 0;border-radius:8px;font-size:12px;font-family:monospace;color:#7f1d1d';
-    errDiv.textContent = 'JS Error: ' + (e.message || String(e)) + ' | key: ' + (apiKey ? apiKey.slice(0,12)+'…' : 'EMPTY');
-    document.getElementById('messages').appendChild(errDiv);
-    document.getElementById('messages').scrollTop = 99999;
+    showToast('Connection error — check your API key and network');
   }
 
   isStreaming = false;
@@ -984,7 +980,7 @@ Return ONLY the updated memory as plain text. Keep it concise (under 600 words).
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt }] })
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 800, messages: [{ role: 'user', content: prompt }] })
     });
     const data = await res.json();
     const updated = data.content?.[0]?.text;
