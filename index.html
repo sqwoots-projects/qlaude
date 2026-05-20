@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Qlaude">
+<meta name="theme-color" content="#faf9f7">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Qlaude</title>
+<style>
+  :root {
+    --bg: #faf9f7;
+    --bg2: #f3f1ee;
+    --bg3: #ebe8e3;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --border2: rgba(0,0,0,0.13);
+    --text: #1a1917;
+    --text2: #6b6860;
+    --text3: #9e9b96;
+    --accent: #c96442;
+    --accent-bg: #fdf0eb;
+    --accent-text: #8b3e22;
+    --info-bg: #eef4fd;
+    --info-text: #2563aa;
+    --success-bg: #edfaf3;
+    --success-text: #166534;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --font: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412;
+      --bg2: #1e1d1b;
+      --bg3: #272522;
+      --surface: #1e1d1b;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.13);
+      --text: #f0ede8;
+      --text2: #a09d98;
+      --text3: #6b6860;
+      --accent: #e07855;
+      --accent-bg: #2a1a12;
+      --accent-text: #f0a882;
+      --info-bg: #0f1e35;
+      --info-text: #7bb3f0;
+      --success-bg: #0a1f14;
+      --success-text: #4ade80;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+  /* ── Screens ── */
+  .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); z-index: 100; }
+  .screen.hidden { display: none; }
+  .screen-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; width: 100%; max-width: 360px; box-shadow: var(--shadow); }
+  .screen-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; }
+  .screen-logo svg { width: 32px; height: 32px; }
+  .screen-logo span { font-size: 20px; font-weight: 600; letter-spacing: -0.5px; }
+  .screen-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.3px; }
+  .screen-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; line-height: 1.5; }
+  .pin-dots { display: flex; gap: 12px; justify-content: center; margin: 1.5rem 0; }
+  .pin-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border2); transition: all 0.15s; }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-dot.error { background: #e24b4a; border-color: #e24b4a; }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .pin-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; font-size: 18px; font-weight: 500; cursor: pointer; transition: all 0.1s; color: var(--text); }
+  .pin-btn:hover { background: var(--bg3); }
+  .pin-btn:active { transform: scale(0.96); }
+  .pin-btn.del { font-size: 14px; color: var(--text2); }
+  .pin-btn.empty { visibility: hidden; }
+  label.field-label { font-size: 12px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 6px; letter-spacing: 0.3px; text-transform: uppercase; }
+  input.field { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; color: var(--text); font-family: var(--font); outline: none; transition: border 0.15s; margin-bottom: 1rem; }
+  input.field:focus { border-color: var(--accent); }
+  select.field { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; color: var(--text); font-family: var(--font); outline: none; transition: border 0.15s; margin-bottom: 1rem; cursor: pointer; }
+  select.field:focus { border-color: var(--accent); }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 11px 16px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; font-family: var(--font); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-ghost { background: none; border: 1px solid var(--border2); color: var(--text2); }
+  .btn-ghost:hover { background: var(--bg2); color: var(--text); }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
+  .hint { font-size: 12px; color: var(--text3); margin-top: 1rem; text-align: center; line-height: 1.5; }
+  .hint a { color: var(--accent); text-decoration: none; }
+  .divider { height: 1px; background: var(--border); margin: 1.25rem 0; }
+  .error-msg { font-size: 12px; color: #e24b4a; margin-top: -0.5rem; margin-bottom: 0.75rem; }
+
+  /* ── Layout ── */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  #sidebar { width: 260px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: transform 0.25s; }
+  #sidebar-header { padding: 14px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+  #sidebar-logo { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
+  #sidebar-logo svg { width: 22px; height: 22px; }
+  .icon-btn { background: none; border: none; cursor: pointer; color: var(--text2); padding: 6px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .icon-btn:hover { background: var(--bg3); color: var(--text); }
+  .icon-btn svg { width: 18px; height: 18px; }
+  #new-chat-btn { margin: 0 12px 10px; display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; font-family: var(--font); }
+  #new-chat-btn:hover { border-color: var(--border2); color: var(--text); background: var(--bg); }
+  #new-chat-btn svg { width: 16px; height: 16px; }
+  #sidebar-tabs { display: flex; padding: 0 12px; gap: 4px; margin-bottom: 8px; }
+  .sidebar-tab { flex: 1; padding: 7px 8px; text-align: center; font-size: 12px; font-weight: 500; color: var(--text2); cursor: pointer; border-radius: var(--radius-sm); border: none; background: none; font-family: var(--font); transition: all 0.15s; }
+  .sidebar-tab.active { background: var(--bg3); color: var(--text); }
+  #sidebar-content { flex: 1; overflow-y: auto; padding: 0 8px; }
+  .conv-item { padding: 9px 10px; border-radius: var(--radius-sm); cursor: pointer; margin-bottom: 2px; border: 1px solid transparent; transition: all 0.15s; }
+  .conv-item:hover { background: var(--bg3); }
+  .conv-item.active { background: var(--surface); border-color: var(--border); }
+  .conv-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+  .conv-date { font-size: 11px; color: var(--text3); }
+  .conv-empty { padding: 24px 12px; text-align: center; color: var(--text3); font-size: 13px; }
+  #memory-panel { padding: 8px; }
+  .memory-header { display: flex; align-items: center; justify-content: space-between; padding: 6px 4px 10px; }
+  .memory-header span { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.3px; }
+  #memory-text { width: 100%; min-height: 180px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; font-size: 12px; line-height: 1.6; color: var(--text); font-family: var(--font); resize: vertical; outline: none; }
+  #memory-text:focus { border-color: var(--accent); }
+  .memory-hint { font-size: 11px; color: var(--text3); margin-top: 8px; line-height: 1.5; }
+  #sidebar-footer { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+  #sidebar-footer .icon-btn { flex: 1; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; flex-direction: column; gap: 3px; font-size: 10px; color: var(--text2); }
+  #sidebar-footer .icon-btn span { display: block; }
+
+  /* ── Main ── */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  #topbar { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; background: var(--bg); }
+  #menu-btn { display: none; }
+  #model-select { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 13px; color: var(--text2); font-family: var(--font); outline: none; cursor: pointer; }
+  #model-select:focus { border-color: var(--accent); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  #search-toggle { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: none; font-size: 13px; color: var(--text2); cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+  #search-toggle svg { width: 15px; height: 15px; }
+  #search-toggle.on { background: var(--info-bg); color: var(--info-text); border-color: transparent; }
+  #search-toggle:hover:not(.on) { background: var(--bg2); }
+
+  /* ── Messages ── */
+  #messages { flex: 1; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 0; }
+  .welcome { max-width: 520px; margin: auto; padding: 40px 20px; text-align: center; }
+  .welcome-icon { margin-bottom: 16px; }
+  .welcome-icon svg { width: 48px; height: 48px; }
+  .welcome h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .welcome p { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 20px; }
+  .welcome-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .welcome-chip { padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+  .welcome-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .msg-group { margin-bottom: 20px; }
+  .msg-row { display: flex; gap: 12px; align-items: flex-start; }
+  .msg-row.user { flex-direction: row-reverse; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+  .avatar.ai { background: transparent; color: transparent; font-size: 0; width: 30px; height: 30px; border-radius: 50%; background-image: url('data:image/png;base64,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'); background-size: cover; }
+  .avatar.user { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+  .bubble { max-width: min(75%, 640px); }
+  .bubble.user { text-align: right; }
+  .bubble-content { display: inline-block; text-align: left; padding: 10px 14px; border-radius: var(--radius); font-size: 14px; line-height: 1.7; }
+  .bubble.ai .bubble-content { background: var(--bg2); border: 1px solid var(--border); }
+  .bubble.user .bubble-content { background: var(--accent); color: #fff; }
+  .bubble-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .meta-pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 8px; border-radius: 20px; }
+  .meta-pill.search { background: var(--info-bg); color: var(--info-text); }
+  .meta-pill.file { background: var(--bg3); color: var(--text2); }
+  .meta-pill svg { width: 11px; height: 11px; }
+  .bubble-content p { margin-bottom: 6px; }
+  .bubble-content p:last-child { margin-bottom: 0; }
+  .bubble-content h1,.bubble-content h2,.bubble-content h3 { font-weight: 600; margin: 10px 0 4px; line-height: 1.3; }
+  .bubble-content h1 { font-size: 16px; }
+  .bubble-content h2 { font-size: 15px; }
+  .bubble-content h3 { font-size: 14px; }
+  .bubble-content ul,.bubble-content ol { padding-left: 20px; margin: 4px 0; }
+  .bubble-content li { margin-bottom: 3px; }
+  .bubble-content code { background: var(--bg3); border-radius: 4px; padding: 1px 5px; font-family: var(--mono); font-size: 12px; }
+  .bubble-content pre { background: var(--bg3); border-radius: var(--radius-sm); padding: 12px; margin: 8px 0; overflow-x: auto; }
+  .bubble-content pre code { background: none; padding: 0; font-size: 12px; }
+  .bubble-content a { color: var(--accent); text-decoration: underline; }
+  .bubble-content strong { font-weight: 600; }
+  .bubble-content em { font-style: italic; }
+  .bubble-content blockquote { border-left: 3px solid var(--border2); padding-left: 12px; color: var(--text2); margin: 6px 0; }
+  .bubble-content table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
+  .bubble-content th,.bubble-content td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+  .bubble-content th { background: var(--bg3); font-weight: 600; }
+  .typing-row { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+  .typing-dots { display: flex; gap: 5px; padding: 10px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); }
+  .typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: blink 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100%{opacity:0.3}40%{opacity:1} }
+
+  /* ── Input ── */
+  #input-area { padding: 12px 16px 16px; border-top: 1px solid var(--border); background: var(--bg); flex-shrink: 0; }
+  #attachments-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .att-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; font-size: 12px; color: var(--text2); }
+  .att-chip button { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; line-height: 1; padding: 0; display: flex; align-items: center; }
+  .att-chip button:hover { color: #e24b4a; }
+  .att-chip svg { width: 12px; height: 12px; }
+  #composer-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: border 0.15s; }
+  #composer-box:focus-within { border-color: var(--border2); }
+  #composer { width: 100%; padding: 11px 14px; font-size: 14px; font-family: var(--font); color: var(--text); background: transparent; border: none; outline: none; resize: none; min-height: 44px; max-height: 160px; line-height: 1.6; display: block; }
+  #composer::placeholder { color: var(--text3); }
+  #input-actions { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-top: 1px solid var(--border); }
+  #file-btn { cursor: pointer; }
+  #file-input { display: none; }
+  #input-actions .spacer { flex: 1; }
+  #char-count { font-size: 11px; color: var(--text3); }
+  #send-btn { width: 32px; height: 32px; background: var(--accent); border: none; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  #send-btn:hover { opacity: 0.9; }
+  #send-btn:disabled { opacity: 0.3; cursor: default; }
+  #send-btn svg { width: 15px; height: 15px; fill: white; }
+
+  /* ── Overlay / Modal ── */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.hidden { display: none; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; width: 100%; max-width: 420px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+  .modal-title { font-size: 16px; font-weight: 600; letter-spacing: -0.3px; }
+
+  /* ── Sidebar overlay for mobile ── */
+  #sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 29; }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    #sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 30; transform: translateX(-100%); }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar-backdrop.open { display: block; }
+    #menu-btn { display: flex; }
+    #messages { padding: 16px 12px; }
+    .bubble { max-width: 88%; }
+    #input-area { padding: 8px 12px 14px; }
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  /* ── Toast ── */
+  #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+
+  /* ── Memory auto-update indicator ── */
+  .memory-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 2px 7px; background: var(--success-bg); color: var(--success-text); border-radius: 20px; }
+</style>
+</head>
+<body>
+
+<!-- PIN Screen -->
+<div class="screen" id="pin-screen">
+  <div class="screen-card">
+    <div class="screen-logo"><img src="data:image/png;base64,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" style="width:36px;height:36px;object-fit:contain;border-radius:6px" alt=""><span>Qlaude</span></div>
+    <div class="screen-title">One last thing</div>
+    <div class="screen-sub">Paste the API key below — your partner will send it to you. It stays on your phone and is never shared anywhere.</div>
+    <label class="field-label">API key</label>
+    <input class="field" type="text" id="setup-key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" style="font-family:monospace;font-size:12px">
+    <div class="error-msg hidden" id="setup-error"></div>
+    <input type="hidden" id="setup-name" value="Bao">
+    <select class="field" id="setup-model" style="display:none">
+      <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (recommended)</option>
+    </select>
+    <button class="btn btn-primary" onclick="setupSave()">Let's go →</button>
+    <p class="hint">Only needs to be done once. After this you just enter your PIN.</p>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <!-- Sidebar -->
+  <div id="sidebar-backdrop" onclick="closeSidebar()"></div>
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div id="sidebar-logo"><img src="data:image/png;base64,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" style="width:20px;height:20px;object-fit:contain;border-radius:3px" alt=""> Qlaude</div>
+      <button class="icon-btn" onclick="closeSidebar()" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <button id="new-chat-btn" onclick="newChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      New conversation
+    </button>
+
+    <div id="sidebar-tabs">
+      <button class="sidebar-tab active" onclick="showTab('history')" id="tab-history">History</button>
+      <button class="sidebar-tab" onclick="showTab('memory')" id="tab-memory">Memory</button>
+    </div>
+
+    <div id="sidebar-content">
+      <div id="history-panel"></div>
+      <div id="memory-panel" style="display:none">
+        <div class="memory-header">
+          <span>What Claude remembers</span>
+          <button class="btn btn-ghost btn-sm" onclick="saveMemory()" style="width:auto">Save</button>
+        </div>
+        <textarea id="memory-text" placeholder="Claude will remember things about you here automatically. You can also type facts directly — your name, job, preferences, goals, anything useful."></textarea>
+        <p class="memory-hint">This is injected at the start of every conversation. It's updated automatically after each chat.</p>
+      </div>
+    </div>
+
+    <div id="sidebar-footer">
+      <button class="icon-btn" onclick="openSettings()" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div id="topbar">
+      <button class="icon-btn" id="menu-btn" onclick="openSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <select id="model-select" onchange="setModel(this.value)">
+        <option value="claude-sonnet-4-20250514">Sonnet 4</option>
+        <option value="claude-haiku-4-5-20251001">Haiku 4.5</option>
+        <option value="claude-opus-4-20250514">Opus 4</option>
+      </select>
+      <div class="topbar-right">
+        <button id="search-toggle" onclick="toggleSearch()" title="Toggle web search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span id="search-label">Search</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="messages">
+      <div class="welcome" id="welcome-msg">
+        <div class="welcome-icon"><img src="data:image/png;base64,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" style="width:64px;height:64px;object-fit:contain;border-radius:10px" alt=""></div>
+        <h2>Hi Bao! 👋</h2>
+        <p>Your private Claude workspace. I remember context between conversations and can search the web and read files.</p>
+        <div class="welcome-chips">
+          <div class="welcome-chip" onclick="startPrompt('Help me improve my CV or resume')">Improve my CV</div>
+          <div class="welcome-chip" onclick="startPrompt('Help me write a cover letter for a job application')">Cover letter</div>
+          <div class="welcome-chip" onclick="startPrompt('Help me research a topic in depth')">Research</div>
+          <div class="welcome-chip" onclick="startPrompt('What should I know before a job interview?')">Interview prep</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="input-area">
+      <div id="attachments-row"></div>
+      <div id="composer-box">
+        <textarea id="composer" placeholder="Message Qlaude…" rows="1" onkeydown="composerKey(event)" oninput="composerInput()"></textarea>
+        <div id="input-actions">
+          <label class="icon-btn" id="file-btn" title="Attach file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.md,.csv" multiple onchange="attachFiles(this.files)">
+          </label>
+          <div class="spacer"></div>
+          <span id="char-count"></span>
+          <button id="send-btn" onclick="sendMessage()" disabled>
+            <svg viewBox="0 0 24 24"><path d="M2 21L23 12 2 3v7l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="overlay hidden" id="settings-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Settings</div>
+      <button class="icon-btn" onclick="closeSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <label class="field-label">API key</label>
+    <input class="field" type="password" id="settings-key" placeholder="sk-ant-…" autocomplete="off">
+    <label class="field-label">Your name</label>
+    <input class="field" type="text" id="settings-name" placeholder="e.g. Sarah">
+    <label class="field-label">Change PIN</label>
+    <input class="field" type="text" id="settings-pin" placeholder="4-digit PIN (leave blank to keep current)" maxlength="4" pattern="[0-9]*" inputmode="numeric">
+    <div class="divider"></div>
+    <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+    <div style="margin-top:10px"></div>
+    <button class="btn btn-ghost" onclick="clearAllData()" style="color:#e24b4a;border-color:#e24b4a">Clear all data &amp; reset</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Crypto helpers ──
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function xorEncrypt(text, key) {
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    out += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return btoa(out);
+}
+function xorDecrypt(enc, key) {
+  const text = atob(enc);
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    out += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return out;
+}
+
+// ── State ──
+let currentPin = '';
+let apiKey = '';
+let userName = '';
+let currentModel = 'claude-sonnet-4-20250514';
+let searchEnabled = false;
+let attachedFiles = [];
+let conversations = [];
+let currentConvId = null;
+let isStreaming = false;
+let currentTab = 'history';
+
+// ── Init ──
+window.addEventListener('load', async () => {
+  if (!localStorage.getItem('pin_hash')) {
+    localStorage.setItem('pin_hash', '6dfb97632210ac38a071667cf8be7df83a16178e12f1248e45b2a3d24b3b2bd1');
+  }
+  if (!localStorage.getItem('user_name')) {
+    localStorage.setItem('user_name', 'Bao');
+  }
+  if (!localStorage.getItem('model')) {
+    localStorage.setItem('model', 'claude-sonnet-4-20250514');
+  }
+  if (!localStorage.getItem('memory')) {
+    localStorage.setItem('memory', "User's name is Bao.");
+  }
+  window._pinMode = 'verify';
+});
+
+// ── PIN ──
+let pinBuffer = '';
+function pinKey(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updateDots();
+  if (pinBuffer.length === 4) setTimeout(() => handlePin(), 150);
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updateDots();
+}
+function updateDots(state) {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('d' + i);
+    dot.className = 'pin-dot';
+    if (state === 'error') dot.classList.add('error');
+    else if (i < pinBuffer.length) dot.classList.add('filled');
+  }
+}
+async function handlePin() {
+  if (window._pinMode === 'create') {
+    if (!window._pinFirst) {
+      window._pinFirst = pinBuffer;
+      pinBuffer = '';
+      updateDots();
+      document.getElementById('pin-title').textContent = 'Confirm your PIN';
+      document.getElementById('pin-sub').textContent = 'Enter your PIN again to confirm.';
+      return;
+    }
+    if (pinBuffer !== window._pinFirst) {
+      updateDots('error');
+      setTimeout(() => { pinBuffer = ''; window._pinFirst = ''; updateDots(); document.getElementById('pin-title').textContent = 'Create a PIN'; document.getElementById('pin-sub').textContent = 'PINs didn\'t match. Try again.'; }, 600);
+      return;
+    }
+    const hash = await sha256(pinBuffer);
+    localStorage.setItem('pin_hash', hash);
+    currentPin = pinBuffer;
+    pinBuffer = '';
+    // Check if setup done
+    const encKey = localStorage.getItem('api_key_enc');
+    if (!encKey) {
+      showSetup();
+    } else {
+      unlockApp();
+    }
+  } else {
+    const hash = await sha256(pinBuffer);
+    const stored = localStorage.getItem('pin_hash');
+    if (hash !== stored) {
+      updateDots('error');
+      setTimeout(() => { pinBuffer = ''; updateDots(); }, 600);
+      return;
+    }
+    currentPin = pinBuffer;
+    pinBuffer = '';
+    const encKey = localStorage.getItem('api_key_enc');
+    if (!encKey) {
+      showSetup();
+    } else {
+      unlockApp();
+    }
+  }
+}
+function showSetup() {
+  document.getElementById('pin-screen').classList.add('hidden');
+  document.getElementById('setup-screen').classList.remove('hidden');
+}
+function unlockApp() {
+  const encKey = localStorage.getItem('api_key_enc');
+  if (!encKey) {
+    showSetup();
+    return;
+  }
+  apiKey = xorDecrypt(encKey, currentPin);
+  userName = localStorage.getItem('user_name') || 'Bao';
+  currentModel = localStorage.getItem('model') || 'claude-sonnet-4-20250514';
+  document.getElementById('model-select').value = currentModel;
+  conversations = JSON.parse(localStorage.getItem('conversations') || '[]');
+  document.getElementById('pin-screen').classList.add('hidden');
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('app').style.display = 'flex';
+  renderHistory();
+  loadMemoryText();
+}
+
+// ── Setup ──
+async function setupSave() {
+  const key = document.getElementById('setup-key').value.trim();
+  const errEl = document.getElementById('setup-error');
+  if (!key.startsWith('sk-ant-')) {
+    errEl.textContent = 'That doesn\'t look right — it should start with sk-ant-';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
+  // Validate key
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 5, messages: [{ role: 'user', content: 'hi' }] })
+    });
+    if (r.status === 401) { errEl.textContent = 'API key not valid — double check and try again.'; errEl.classList.remove('hidden'); return; }
+  } catch(e) {}
+  localStorage.setItem('api_key_enc', xorEncrypt(key, currentPin));
+  localStorage.setItem('user_name', 'Bao');
+  localStorage.setItem('model', 'claude-sonnet-4-20250514');
+  apiKey = key;
+  userName = 'Bao';
+  currentModel = 'claude-sonnet-4-20250514';
+  document.getElementById('model-select').value = currentModel;
+  conversations = [];
+  unlockApp();
+}
+
+// ── App ──
+document.getElementById('app').style.display = 'none';
+
+function setModel(v) { currentModel = v; localStorage.setItem('model', v); }
+
+function toggleSearch() {
+  searchEnabled = !searchEnabled;
+  const btn = document.getElementById('search-toggle');
+  btn.classList.toggle('on', searchEnabled);
+  document.getElementById('search-label').textContent = searchEnabled ? 'Search on' : 'Search';
+}
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-backdrop').classList.add('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('open');
+}
+
+function showTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-history').classList.toggle('active', tab === 'history');
+  document.getElementById('tab-memory').classList.toggle('active', tab === 'memory');
+  document.getElementById('history-panel').style.display = tab === 'history' ? '' : 'none';
+  document.getElementById('memory-panel').style.display = tab === 'memory' ? '' : 'none';
+}
+
+function renderHistory() {
+  const panel = document.getElementById('history-panel');
+  if (!conversations.length) {
+    panel.innerHTML = '<div class="conv-empty">No conversations yet</div>';
+    return;
+  }
+  const sorted = [...conversations].sort((a, b) => b.updated - a.updated);
+  panel.innerHTML = sorted.map(c => `
+    <div class="conv-item${c.id === currentConvId ? ' active' : ''}" onclick="loadConv('${c.id}')">
+      <div class="conv-title">${escHtml(c.title)}</div>
+      <div class="conv-date">${formatDate(c.updated)}</div>
+    </div>
+  `).join('');
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 86400000) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (diff < 604800000) return d.toLocaleDateString([], { weekday: 'short' });
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function loadMemoryText() {
+  document.getElementById('memory-text').value = localStorage.getItem('memory') || '';
+}
+
+function saveMemory() {
+  localStorage.setItem('memory', document.getElementById('memory-text').value);
+  showToast('Memory saved');
+}
+
+function getMemory() { return localStorage.getItem('memory') || ''; }
+
+// ── Conversations ──
+function newChat() {
+  if (currentConvId && isStreaming) return;
+  if (currentConvId) autoUpdateMemory();
+  currentConvId = null;
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = `<div class="welcome" id="welcome-msg">
+    <div class="welcome-icon"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#fdf0eb"/><path d="M15 34 C15 34 19 14 24 14 C29 14 33 34 33 34" stroke="#c96442" stroke-width="3" stroke-linecap="round" fill="none"/><path d="M18.5 26 L29.5 26" stroke="#c96442" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+    <h2>New conversation</h2>
+    <p>What can I help you with?</p>
+  </div>`;
+  attachedFiles = [];
+  document.getElementById('attachments-row').innerHTML = '';
+  document.getElementById('composer').value = '';
+  composerInput();
+  renderHistory();
+  closeSidebar();
+}
+
+function loadConv(id) {
+  if (currentConvId && currentConvId !== id) autoUpdateMemory();
+  currentConvId = id;
+  const conv = conversations.find(c => c.id === id);
+  if (!conv) return;
+  const msgs = document.getElementById('messages');
+  msgs.innerHTML = '';
+  conv.messages.forEach(m => {
+    if (m.role === 'user') {
+      const text = typeof m.content === 'string' ? m.content : (m.content.find(b => b.type === 'text') || {}).text || '';
+      const files = m._fileNames || [];
+      renderUserMsg(text, files);
+    } else {
+      renderAiMsg(m.content, m._searchUsed);
+    }
+  });
+  renderHistory();
+  closeSidebar();
+  setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 50);
+}
+
+function getCurrentConv() {
+  return conversations.find(c => c.id === currentConvId);
+}
+
+// ── Rendering ──
+function escHtml(t) {
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function markdownToHtml(text) {
+  let h = text;
+  // Code blocks
+  h = h.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => `<pre><code>${escHtml(code.trim())}</code></pre>`);
+  // Inline code
+  h = h.replace(/`([^`\n]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
+  // Bold, italic
+  h = h.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  h = h.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+  // Headings
+  h = h.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  h = h.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // Blockquotes
+  h = h.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+  // Lists
+  h = h.replace(/^(\s*[-*+] .+(\n\s*[-*+] .+)*)/gm, m => {
+    const items = m.split('\n').filter(l => l.trim()).map(l => `<li>${l.replace(/^\s*[-*+] /, '').trim()}</li>`).join('');
+    return `<ul>${items}</ul>`;
+  });
+  h = h.replace(/^(\s*\d+\. .+(\n\s*\d+\. .+)*)/gm, m => {
+    const items = m.split('\n').filter(l => l.trim()).map(l => `<li>${l.replace(/^\s*\d+\. /, '').trim()}</li>`).join('');
+    return `<ol>${items}</ol>`;
+  });
+  // HR
+  h = h.replace(/^---$/gm, '<hr>');
+  // Links
+  h = h.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // Paragraphs
+  const lines = h.split('\n');
+  const out = [];
+  let inPre = false;
+  for (const line of lines) {
+    if (line.startsWith('<pre>')) inPre = true;
+    if (line.startsWith('</pre>')) inPre = false;
+    if (!inPre && line.trim() && !line.startsWith('<h') && !line.startsWith('<ul') && !line.startsWith('<ol') && !line.startsWith('<li') && !line.startsWith('<blockquote') && !line.startsWith('<hr') && !line.startsWith('<pre')) {
+      out.push(`<p>${line}</p>`);
+    } else {
+      out.push(line);
+    }
+  }
+  return out.join('\n');
+}
+
+function renderUserMsg(text, fileNames) {
+  const msgs = document.getElementById('messages');
+  const welcome = document.getElementById('welcome-msg');
+  if (welcome) welcome.remove();
+  const row = document.createElement('div');
+  row.className = 'msg-group';
+  let meta = '';
+  if (fileNames && fileNames.length) {
+    meta = fileNames.map(n => `<div class="meta-pill file"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>${escHtml(n)}</div>`).join('');
+  }
+  row.innerHTML = `<div class="msg-row user">
+    <div class="avatar user">${userName ? userName[0].toUpperCase() : 'Y'}</div>
+    <div class="bubble user">
+      ${meta ? `<div class="bubble-meta">${meta}</div>` : ''}
+      <div class="bubble-content">${escHtml(text).replace(/\n/g, '<br>')}</div>
+    </div>
+  </div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function renderAiMsg(text, searchUsed) {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-group';
+  const searchPill = searchUsed ? `<div class="meta-pill search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Searched the web</div>` : '';
+  row.innerHTML = `<div class="msg-row">
+    <div class="avatar ai">C</div>
+    <div class="bubble ai">
+      ${searchPill ? `<div class="bubble-meta">${searchPill}</div>` : ''}
+      <div class="bubble-content" id="ai-content-${Date.now()}"></div>
+    </div>
+  </div>`;
+  msgs.appendChild(row);
+  const content = row.querySelector('.bubble-content');
+  msgs.scrollTop = msgs.scrollHeight;
+  return content;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'typing-row';
+  row.id = 'typing-indicator';
+  row.innerHTML = `<div class="avatar ai">C</div><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  msgs.appendChild(row);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function hideTyping() { document.getElementById('typing-indicator')?.remove(); }
+
+// ── Composer ──
+function composerKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function composerInput() {
+  const c = document.getElementById('composer');
+  c.style.height = 'auto';
+  c.style.height = Math.min(c.scrollHeight, 160) + 'px';
+  document.getElementById('send-btn').disabled = !c.value.trim() && !attachedFiles.length;
+}
+
+function startPrompt(text) {
+  document.getElementById('composer').value = text;
+  composerInput();
+  document.getElementById('composer').focus();
+}
+
+// ── File attachments ──
+function attachFiles(files) {
+  Array.from(files).forEach(f => {
+    if (f.size > 10 * 1024 * 1024) { showToast('File too large (max 10MB)'); return; }
+    attachedFiles.push(f);
+    renderAttachment(f);
+  });
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('file-input').value = '';
+}
+
+function renderAttachment(f) {
+  const row = document.getElementById('attachments-row');
+  const chip = document.createElement('div');
+  chip.className = 'att-chip';
+  chip.dataset.name = f.name;
+  chip.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>${escHtml(f.name.length > 20 ? f.name.slice(0,18)+'…' : f.name)}<button onclick="removeAttachment('${escHtml(f.name)}', this)">×</button>`;
+  row.appendChild(chip);
+}
+
+function removeAttachment(name, btn) {
+  attachedFiles = attachedFiles.filter(f => f.name !== name);
+  btn.parentElement.remove();
+  if (!attachedFiles.length && !document.getElementById('composer').value.trim()) {
+    document.getElementById('send-btn').disabled = true;
+  }
+}
+
+async function toBase64(file) {
+  return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+}
+
+// ── Send ──
+async function sendMessage() {
+  if (isStreaming) return;
+  const comp = document.getElementById('composer');
+  const text = comp.value.trim();
+  if (!text && !attachedFiles.length) return;
+  isStreaming = true;
+  document.getElementById('send-btn').disabled = true;
+
+  // Build user content
+  const userContent = [];
+  const fileNames = attachedFiles.map(f => f.name);
+  for (const f of attachedFiles) {
+    const b64 = await toBase64(f);
+    if (f.type.startsWith('image/')) {
+      userContent.push({ type: 'image', source: { type: 'base64', media_type: f.type, data: b64 } });
+    } else if (f.type === 'application/pdf') {
+      userContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } });
+    } else {
+      const txt = await f.text();
+      userContent.push({ type: 'text', text: `File: ${f.name}\n\n${txt}` });
+    }
+  }
+  if (text) userContent.push({ type: 'text', text });
+
+  const finalContent = userContent.length === 1 && userContent[0].type === 'text' ? text : userContent;
+
+  // Create or update conversation
+  if (!currentConvId) {
+    currentConvId = Date.now().toString();
+    conversations.unshift({ id: currentConvId, title: (text || 'Conversation').slice(0, 52), messages: [], updated: Date.now() });
+  }
+  const conv = getCurrentConv();
+  conv.messages.push({ role: 'user', content: finalContent, _fileNames: fileNames });
+  conv.updated = Date.now();
+
+  renderUserMsg(text, fileNames);
+  comp.value = '';
+  comp.style.height = 'auto';
+  attachedFiles = [];
+  document.getElementById('attachments-row').innerHTML = '';
+  composerInput();
+
+  showTyping();
+
+  // Build system prompt
+  const memory = getMemory();
+  let systemPrompt = `You are Qlaude, a helpful AI assistant. Today's date is ${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
+  if (memory.trim()) systemPrompt += `\n\n## What you know about the user\n${memory}`;
+  systemPrompt += `\n\nBe warm, direct, and genuinely helpful. Match your response length to the complexity of the question — conversational replies can be brief, detailed tasks deserve thorough answers.`;
+
+  // Build API messages (exclude _fileNames metadata)
+  const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
+
+  // Build request body
+  const body = { model: currentModel, max_tokens: 4096, system: systemPrompt, messages: apiMessages, stream: true };
+  if (searchEnabled) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+
+  let fullResponse = '';
+  let searchUsed = false;
+  let aiContentEl = null;
+
+  // Debug: show what apiKey looks like
+  const debugInfo = 'key=' + (apiKey ? apiKey.slice(0,12)+'…' : 'EMPTY') + ' pin=' + (currentPin||'EMPTY') + ' model=' + currentModel;
+  console.log('Sending:', debugInfo);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      hideTyping();
+      // Show full error visibly in chat
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;padding:12px;margin:8px 0;border-radius:8px;font-size:12px;font-family:monospace;word-break:break-all;color:#7f1d1d';
+      errDiv.textContent = 'HTTP ' + res.status + ' | key: ' + (apiKey ? apiKey.slice(0,12)+'…' : 'EMPTY') + ' | ' + errText.slice(0,300);
+      document.getElementById('messages').appendChild(errDiv);
+      document.getElementById('messages').scrollTop = 99999;
+      isStreaming = false;
+      document.getElementById('send-btn').disabled = false;
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_start' && evt.content_block?.type === 'tool_use') {
+            searchUsed = true;
+          }
+          if (evt.type === 'content_block_start' && evt.content_block?.type === 'text') {
+            if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); }
+          }
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); }
+            fullResponse += evt.delta.text;
+            aiContentEl.innerHTML = markdownToHtml(fullResponse);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+          }
+        } catch(e) {}
+      }
+    }
+
+    if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg(fullResponse || '(no response)', searchUsed); aiContentEl.innerHTML = markdownToHtml(fullResponse); }
+
+    // Save assistant message
+    conv.messages.push({ role: 'assistant', content: fullResponse, _searchUsed: searchUsed });
+    conv.updated = Date.now();
+    saveConversations();
+    renderHistory();
+
+  } catch(e) {
+    hideTyping();
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;padding:12px;margin:8px 0;border-radius:8px;font-size:12px;font-family:monospace;color:#7f1d1d';
+    errDiv.textContent = 'JS Error: ' + (e.message || String(e)) + ' | key: ' + (apiKey ? apiKey.slice(0,12)+'…' : 'EMPTY');
+    document.getElementById('messages').appendChild(errDiv);
+    document.getElementById('messages').scrollTop = 99999;
+  }
+
+  isStreaming = false;
+  document.getElementById('send-btn').disabled = !document.getElementById('composer').value.trim();
+}
+
+function saveConversations() {
+  // Cap at 100 conversations
+  if (conversations.length > 100) conversations = conversations.slice(0, 100);
+  localStorage.setItem('conversations', JSON.stringify(conversations));
+}
+
+// ── Auto memory update ──
+async function autoUpdateMemory() {
+  const conv = getCurrentConv();
+  if (!conv || conv.messages.length < 2) return;
+  const existing = getMemory();
+  const transcript = conv.messages.slice(0, 20).map(m => {
+    const text = typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.filter(b=>b.type==='text').map(b=>b.text).join(' ') : '');
+    return `${m.role === 'user' ? 'User' : 'Claude'}: ${text.slice(0, 400)}`;
+  }).join('\n');
+  const prompt = `You maintain a persistent memory for a Claude AI assistant app. Review this conversation and update the memory with any important new facts about the user — their name, job, goals, preferences, projects, communication style, or anything worth remembering for future conversations.
+
+Current memory:
+${existing || '(empty)'}
+
+Recent conversation:
+${transcript}
+
+Return ONLY the updated memory as plain text. Keep it concise (under 600 words). Preserve existing facts. Add new relevant facts. Remove outdated info. Do not include any preamble or explanation.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 800, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const updated = data.content?.[0]?.text;
+    if (updated) {
+      localStorage.setItem('memory', updated);
+      document.getElementById('memory-text').value = updated;
+    }
+  } catch(e) {}
+}
+
+// ── Settings ──
+function openSettings() {
+  document.getElementById('settings-key').value = apiKey;
+  document.getElementById('settings-name').value = userName;
+  document.getElementById('settings-pin').value = '';
+  document.getElementById('settings-overlay').classList.remove('hidden');
+}
+function closeSettings() { document.getElementById('settings-overlay').classList.add('hidden'); }
+async function saveSettings() {
+  const key = document.getElementById('settings-key').value.trim();
+  const name = document.getElementById('settings-name').value.trim();
+  const pin = document.getElementById('settings-pin').value.trim();
+  if (key) {
+    apiKey = key;
+    localStorage.setItem('api_key_enc', xorEncrypt(key, currentPin));
+  }
+  if (name) { userName = name; localStorage.setItem('user_name', name); }
+  if (pin && pin.length === 4 && /^\d+$/.test(pin)) {
+    const hash = await sha256(pin);
+    localStorage.setItem('pin_hash', hash);
+    currentPin = pin;
+    localStorage.setItem('api_key_enc', xorEncrypt(apiKey, pin));
+    showToast('PIN updated');
+  }
+  closeSettings();
+  showToast('Settings saved');
+}
+function clearAllData() {
+  if (confirm('This will delete all conversations, memory, and settings. Are you sure?')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ── Toast ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Keyboard shortcuts ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSettings(); closeSidebar(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); newChat(); }
+});
+
+// ── Auto-save memory on unload ──
+window.addEventListener('beforeunload', () => {
+  if (currentConvId) autoUpdateMemory();
+});
+</script>
+</body>
+</html>
