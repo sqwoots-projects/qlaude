@@ -235,6 +235,22 @@
   }
 
 
+
+  /* ── Smooth streaming ── */
+  .bubble-content.streaming { white-space: pre-wrap; word-break: break-word; }
+  .bubble-content.streaming::after {
+    content: '▋';
+    display: inline-block;
+    margin-left: 1px;
+    color: var(--accent);
+    animation: cursor-blink 1s step-end infinite;
+    font-weight: 400;
+  }
+  @keyframes cursor-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  /* Gentle fade when final formatted content replaces the streamed text */
+  .bubble-content:not(.streaming) { animation: content-settle 0.25s ease-out; }
+  @keyframes content-settle { from { opacity: 0.6; } to { opacity: 1; } }
+
   /* ── Artifact Panel (desktop: side panel) ── */
   #artifact-panel { width: 0; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.3s cubic-bezier(0.4,0,0.2,1); }
   #artifact-panel.open { width: min(480px, 45vw); }
@@ -379,7 +395,7 @@
       <button class="icon-btn" id="menu-btn" onclick="openSidebar()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
-      <span style="font-size:10px;color:var(--text3);margin-right:4px" title="version">v10</span>
+      <span style="font-size:10px;color:var(--text3);margin-right:4px" title="version">v11</span>
       <select id="model-select" onchange="setModel(this.value)">
         <option value="claude-sonnet-4-6">Sonnet 4.6</option>
         <option value="claude-haiku-4-5">Haiku 4.5</option>
@@ -1043,23 +1059,35 @@ async function sendMessage() {
             if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); }
           }
           if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-            if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); }
+            if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); aiContentEl.classList.add('streaming'); }
             fullResponse += evt.delta.text;
-            // Hide artifact markup mid-stream — show a clean placeholder instead of raw tags
+            // Smooth streaming: render as plain text (no markdown reflow/flicker).
+            // Markdown formatting is applied once at the end.
             let streamView = fullResponse;
             if (streamView.includes('<artifact')) {
-              // Strip from the artifact tag onward (it'll render in the panel when complete)
               streamView = streamView.replace(/<artifact[\s\S]*$/i, '').trim();
               if (!streamView) streamView = 'Preparing your document…';
             }
-            aiContentEl.innerHTML = markdownToHtml(streamView);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            // textContent appends smoothly without re-parsing HTML each chunk
+            aiContentEl.textContent = streamView;
+            const m = document.getElementById('messages');
+            // Only autoscroll if user is near the bottom (don't yank them up if reading)
+            if (m.scrollHeight - m.scrollTop - m.clientHeight < 120) m.scrollTop = m.scrollHeight;
           }
         } catch(e) {}
       }
     }
 
-    if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg(fullResponse || '(no response)', searchUsed); aiContentEl.innerHTML = markdownToHtml(fullResponse); }
+    if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); }
+    // Stream finished — apply full markdown formatting (replaces plain text smoothly)
+    if (aiContentEl) {
+      aiContentEl.classList.remove('streaming');
+      let finalView = fullResponse;
+      if (finalView.includes('<artifact')) {
+        finalView = finalView.replace(/<artifact[\s\S]*$/i, '').trim();
+      }
+      if (finalView) aiContentEl.innerHTML = markdownToHtml(finalView);
+    }
 
     // Check for artifact in response
     const artifactData = detectArtifact(fullResponse);
