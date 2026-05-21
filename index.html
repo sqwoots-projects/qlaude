@@ -234,6 +234,42 @@
     #input-area { padding: 8px 12px 14px; }
   }
 
+
+  /* ── Artifact Panel (desktop: side panel) ── */
+  #artifact-panel { width: 0; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.3s cubic-bezier(0.4,0,0.2,1); }
+  #artifact-panel.open { width: min(480px, 45vw); }
+  #artifact-backdrop { display: none; }
+  /* Mobile: bottom sheet */
+  @media (max-width: 820px) {
+    #artifact-panel { position: fixed; left: 0; right: 0; bottom: 0; top: auto; width: 100% !important; height: 0; max-height: 92vh; border-left: none; border-top: 1px solid var(--border); border-radius: 18px 18px 0 0; z-index: 40; transition: height 0.32s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 -4px 24px rgba(0,0,0,0.18); }
+    #artifact-panel.open { height: 92vh; width: 100% !important; }
+    #artifact-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 39; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    #artifact-backdrop.open { display: block; opacity: 1; pointer-events: auto; }
+    #artifact-header { padding: 14px 16px; }
+    #artifact-header::before { content: ''; position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 36px; height: 4px; border-radius: 2px; background: var(--border2); }
+    #artifact-header { position: relative; padding-top: 18px; }
+    .artifact-action-btn { padding: 12px; font-size: 14px; }
+    .artifact-tab { padding: 7px 12px; font-size: 13px; }
+  }
+  #artifact-header { padding: 11px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; flex-shrink: 0; background: var(--bg2); }
+  #artifact-title { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #artifact-tabs { display: flex; gap: 2px; }
+  .artifact-tab { padding: 4px 10px; font-size: 12px; border-radius: var(--radius-sm); border: none; background: none; color: var(--text2); cursor: pointer; font-family: var(--font); }
+  .artifact-tab.active { background: var(--bg3); color: var(--text); }
+  #artifact-content { flex: 1; overflow: auto; padding: 20px; }
+  #artifact-content.preview iframe { width: 100%; height: 100%; border: none; background: white; }
+  #artifact-rendered { width: 100%; height: 100%; border: none; background: white; border-radius: var(--radius-sm); }
+  #artifact-raw { font-family: var(--mono); font-size: 12px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; color: var(--text); }
+  #artifact-actions { padding: 10px 14px; border-top: 1px solid var(--border); display: flex; gap: 8px; flex-shrink: 0; }
+  .artifact-action-btn { flex: 1; padding: 8px; font-size: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+  .artifact-action-btn:hover { background: var(--bg3); color: var(--text); }
+  .artifact-action-btn.primary { background: var(--accent); color: white; border-color: transparent; }
+  .artifact-action-btn.primary:hover { opacity: 0.9; }
+  /* Artifact pill in chat bubble */
+  .artifact-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; margin-top: 8px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.15s; }
+  .artifact-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .artifact-pill svg { width: 14px; height: 14px; flex-shrink: 0; }
+
   /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -343,6 +379,7 @@
       <button class="icon-btn" id="menu-btn" onclick="openSidebar()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
+      <span style="font-size:10px;color:var(--text3);margin-right:4px" title="version">v10</span>
       <select id="model-select" onchange="setModel(this.value)">
         <option value="claude-sonnet-4-6">Sonnet 4.6</option>
         <option value="claude-haiku-4-5">Haiku 4.5</option>
@@ -388,6 +425,29 @@
       </div>
     </div>
   </div>
+  <!-- Artifact Panel -->
+  <div id="artifact-backdrop" onclick="closeArtifact()"></div>
+  <div id="artifact-panel">
+    <div id="artifact-header">
+      <div id="artifact-title">Artifact</div>
+      <div id="artifact-tabs">
+        <button class="artifact-tab active" onclick="artifactTab('preview')" id="tab-preview">Preview</button>
+        <button class="artifact-tab" onclick="artifactTab('source')" id="tab-source">Source</button>
+      </div>
+      <button class="icon-btn" onclick="closeArtifact()" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="artifact-content">
+      <iframe id="artifact-rendered" sandbox="allow-scripts allow-same-origin" title="Artifact preview"></iframe>
+      <pre id="artifact-raw" style="display:none"></pre>
+    </div>
+    <div id="artifact-actions">
+      <button class="artifact-action-btn" onclick="copyArtifact()">Copy</button>
+      <button class="artifact-action-btn primary" onclick="downloadArtifact()">Download</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- Settings Modal -->
@@ -681,7 +741,19 @@ function loadConv(id) {
       const files = m._fileNames || [];
       renderUserMsg(text, files);
     } else {
-      renderAiMsg(m.content, m._searchUsed);
+      const art = detectArtifact(m.content);
+      if (art) {
+        const el = renderAiMsg(art.chatContent, m._searchUsed);
+        if (el) {
+          const pill = document.createElement('div');
+          pill.className = 'artifact-pill';
+          pill.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>' + escHtml(art.title);
+          pill.onclick = () => openArtifact(art.title, art.content, art.type);
+          el.appendChild(pill);
+        }
+      } else {
+        renderAiMsg(m.content, m._searchUsed);
+      }
     }
   });
   renderHistory();
@@ -779,6 +851,7 @@ function renderAiMsg(text, searchUsed) {
   </div>`;
   msgs.appendChild(row);
   const content = row.querySelector('.bubble-content');
+  if (text) content.innerHTML = markdownToHtml(text);
   msgs.scrollTop = msgs.scrollHeight;
   return content;
 }
@@ -893,13 +966,14 @@ async function sendMessage() {
   let systemPrompt = `You are Qlaude, a helpful AI assistant. Today's date is ${new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
   if (memory.trim()) systemPrompt += `\n\n## What you know about the user\n${memory}`;
   systemPrompt += `\n\nYou have live web access via two tools: web_search (find current info) and web_fetch (read specific URLs). For current events, recent info, or URLs, use them. Never say you cannot browse the web — you can.`;
+  systemPrompt += `\n\nWhen producing a standalone document — such as a CV, resume, cover letter, job comparison table, research summary, essay, report, structured plan, or any content the user will want to save or reuse — wrap it in an artifact tag like this:\n<artifact title="Document Title" type="markdown">\nDocument content here in markdown\n</artifact>\nPut a short intro sentence in the chat and put the full document in the artifact. For conversational replies, analysis, or short answers, do NOT use artifact tags — just reply normally. Use artifacts for documents over ~200 words or anything the user would want to copy/download.`;
   systemPrompt += `\n\nBe warm, direct, and genuinely helpful. Match your response length to the complexity of the question — conversational replies can be brief, detailed tasks deserve thorough answers.`;
 
   // Build API messages (exclude _fileNames metadata)
   const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
 
   // Build request body
-  const body = { model: currentModel, max_tokens: 4096, system: systemPrompt, messages: apiMessages, stream: true };
+  const body = { model: currentModel, max_tokens: 8192, system: systemPrompt, messages: apiMessages, stream: true };
   // Detect if the latest user message contains a URL — if so, enable web fetch so Claude can read it
   const lastUserText = (() => {
     const lm = conv.messages.filter(m => m.role === 'user').pop();
@@ -911,7 +985,7 @@ async function sendMessage() {
     body.tools = [];
     if (searchEnabled) body.tools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: 5 });
     // web_fetch lets Claude read the full content of URLs in the conversation
-    body.tools.push({ type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 8 });
+    body.tools.push({ type: 'web_fetch_20250910', name: 'web_fetch', max_uses: 8 });
   }
 
   let fullResponse = '';
@@ -926,15 +1000,18 @@ async function sendMessage() {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
-        'anthropic-beta': 'web-fetch-2026-02-09'
+        'anthropic-beta': 'web-fetch-2025-09-10'
       },
       body: JSON.stringify(body)
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
+      const errText = await res.text().catch(() => '');
       hideTyping();
-      showToast(err.error?.message || `Error ${res.status}`);
+      const d = document.createElement('div');
+      d.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;padding:12px;margin:8px 16px;border-radius:8px;font-size:11px;font-family:monospace;word-break:break-all;color:#7f1d1d';
+      d.textContent = 'API ' + res.status + ': ' + errText.slice(0,400);
+      document.getElementById('messages').appendChild(d);
       isStreaming = false;
       document.getElementById('send-btn').disabled = false;
       return;
@@ -968,7 +1045,14 @@ async function sendMessage() {
           if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
             if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); }
             fullResponse += evt.delta.text;
-            aiContentEl.innerHTML = markdownToHtml(fullResponse);
+            // Hide artifact markup mid-stream — show a clean placeholder instead of raw tags
+            let streamView = fullResponse;
+            if (streamView.includes('<artifact')) {
+              // Strip from the artifact tag onward (it'll render in the panel when complete)
+              streamView = streamView.replace(/<artifact[\s\S]*$/i, '').trim();
+              if (!streamView) streamView = 'Preparing your document…';
+            }
+            aiContentEl.innerHTML = markdownToHtml(streamView);
             document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
           }
         } catch(e) {}
@@ -977,6 +1061,21 @@ async function sendMessage() {
 
     if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg(fullResponse || '(no response)', searchUsed); aiContentEl.innerHTML = markdownToHtml(fullResponse); }
 
+    // Check for artifact in response
+    const artifactData = detectArtifact(fullResponse);
+    if (artifactData) {
+      // Update the bubble to show chat content + artifact pill
+      if (aiContentEl) {
+        aiContentEl.innerHTML = markdownToHtml(artifactData.chatContent);
+        const pill = document.createElement('div');
+        pill.className = 'artifact-pill';
+        pill.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>${escHtml(artifactData.title)}`;
+        pill.onclick = () => openArtifact(artifactData.title, artifactData.content, artifactData.type);
+        aiContentEl.appendChild(pill);
+        // Auto-open the artifact panel
+        openArtifact(artifactData.title, artifactData.content, artifactData.type);
+      }
+    }
     // Save assistant message
     conv.messages.push({ role: 'assistant', content: fullResponse, _searchUsed: searchUsed });
     conv.updated = Date.now();
@@ -1076,9 +1175,115 @@ function showToast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+
+// ── Artifacts ──
+let currentArtifact = { title: '', content: '', type: 'html' };
+let artifactTabMode = 'preview';
+
+function openArtifact(title, content, type) {
+  currentArtifact = { title, content, type };
+  document.getElementById('artifact-title').textContent = title;
+  document.getElementById('artifact-panel').classList.add('open');
+  const bd = document.getElementById('artifact-backdrop');
+  if (bd) bd.classList.add('open');
+  artifactTab('preview');
+}
+
+function closeArtifact() {
+  document.getElementById('artifact-panel').classList.remove('open');
+  const bd = document.getElementById('artifact-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+
+function artifactTab(mode) {
+  artifactTabMode = mode;
+  document.getElementById('tab-preview').classList.toggle('active', mode === 'preview');
+  document.getElementById('tab-source').classList.toggle('active', mode === 'source');
+  const rendered = document.getElementById('artifact-rendered');
+  const raw = document.getElementById('artifact-raw');
+  if (mode === 'preview') {
+    rendered.style.display = 'block';
+    raw.style.display = 'none';
+    renderArtifactPreview();
+  } else {
+    rendered.style.display = 'none';
+    raw.style.display = 'block';
+    raw.textContent = currentArtifact.content;
+  }
+}
+
+function renderArtifactPreview() {
+  const iframe = document.getElementById('artifact-rendered');
+  const { content, type } = currentArtifact;
+  if (type === 'html') {
+    iframe.srcdoc = content;
+  } else if (type === 'markdown') {
+    // Render markdown as styled HTML
+    const styled = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.7; padding: 20px 24px; color: #1a1917; max-width: 100%; }
+      h1,h2,h3 { font-weight: 600; margin: 16px 0 8px; }
+      h1 { font-size: 22px; } h2 { font-size: 18px; } h3 { font-size: 15px; }
+      p { margin: 0 0 10px; } ul,ol { padding-left: 22px; margin: 6px 0; } li { margin: 3px 0; }
+      strong { font-weight: 600; } em { font-style: italic; }
+      table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 13px; }
+      th,td { border: 1px solid #e0ddd8; padding: 7px 10px; text-align: left; }
+      th { background: #f3f1ee; font-weight: 600; }
+      code { background: #f3f1ee; border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; }
+      pre { background: #f3f1ee; border-radius: 8px; padding: 12px; overflow-x: auto; }
+      pre code { background: none; padding: 0; }
+      hr { border: none; border-top: 1px solid #e0ddd8; margin: 16px 0; }
+      blockquote { border-left: 3px solid #e0ddd8; padding-left: 12px; color: #6b6860; margin: 8px 0; }
+    </style></head><body>${markdownToHtml(content)}</body></html>`;
+    iframe.srcdoc = styled;
+  } else {
+    // Plain text
+    iframe.srcdoc = `<!DOCTYPE html><html><head><style>body{font-family:monospace;font-size:13px;padding:20px;white-space:pre-wrap;line-height:1.6;color:#1a1917}</style></head><body>${escHtml(content)}</body></html>`;
+  }
+}
+
+function copyArtifact() {
+  navigator.clipboard.writeText(currentArtifact.content).then(() => showToast('Copied!')).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = currentArtifact.content;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied!');
+  });
+}
+
+function downloadArtifact() {
+  const { title, content, type } = currentArtifact;
+  const ext = type === 'html' ? 'html' : type === 'markdown' ? 'md' : 'txt';
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (title || 'artifact').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.' + ext;
+  a.click();
+}
+
+// Detect if Claude's response should be an artifact
+// Returns { isArtifact, title, content, type, chatContent } or null
+function detectArtifact(text) {
+  // Look for explicit XML artifact tags first (we'll ask Claude to use these)
+  const xmlMatch = text.match(/<artifact\s+title="([^"]*)"(?:\s+type="([^"]*)")?>([\s\S]*?)<\/artifact>/i);
+  if (xmlMatch) {
+    return {
+      isArtifact: true,
+      title: xmlMatch[1] || 'Artifact',
+      type: xmlMatch[2] || 'markdown',
+      content: xmlMatch[3].trim(),
+      chatContent: text.replace(xmlMatch[0], '').trim() || 'Here\'s your artifact 👆'
+    };
+  }
+  return null;
+}
+
 // ── Keyboard shortcuts ──
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeSettings(); closeSidebar(); }
+  if (e.key === 'Escape') { closeSettings(); closeSidebar(); closeArtifact(); }
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); newChat(); }
 });
 
