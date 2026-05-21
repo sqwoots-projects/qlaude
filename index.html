@@ -437,7 +437,7 @@
       <button class="icon-btn" id="menu-btn" onclick="openSidebar()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
-      <span style="font-size:10px;color:var(--text3);margin-right:4px" title="version">v13</span>
+      <span style="font-size:10px;color:var(--text3);margin-right:4px" title="version">v14</span>
       <select id="model-select" onchange="setModel(this.value)">
         <option value="claude-sonnet-4-6">Sonnet 4.6</option>
         <option value="claude-haiku-4-5">Haiku 4.5</option>
@@ -1061,6 +1061,18 @@ async function toBase64(file) {
 }
 
 // ── Send ──
+async function continueResponse() {
+  // Ask Claude to continue from where the previous response was cut off
+  if (isStreaming) return;
+  const conv = getCurrentConv();
+  if (!conv) return;
+  // Add a continue instruction as a user turn
+  conv.messages.push({ role: 'user', content: 'Please continue exactly where you left off.', _fileNames: [] });
+  conv.updated = Date.now();
+  renderUserMsg('Please continue where you left off.', []);
+  await streamResponse();
+}
+
 async function sendMessage() {
   if (isStreaming) return;
   const comp = document.getElementById('composer');
@@ -1103,6 +1115,15 @@ async function sendMessage() {
   document.getElementById('attachments-row').innerHTML = '';
   composerInput();
 
+  await streamResponse();
+}
+
+async function streamResponse() {
+  const conv = getCurrentConv();
+  if (!conv) { isStreaming = false; return; }
+  isStreaming = true;
+  document.getElementById('send-btn').disabled = true;
+
   showTyping();
 
   // Build system prompt
@@ -1134,6 +1155,7 @@ async function sendMessage() {
 
   let fullResponse = '';
   let searchUsed = false;
+  let stopReason = null;
   let aiContentEl = null;
 
   try {
@@ -1186,6 +1208,9 @@ async function sendMessage() {
           if (evt.type === 'content_block_start' && evt.content_block?.type === 'text') {
             if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); }
           }
+          if (evt.type === 'message_delta' && evt.delta?.stop_reason) {
+            stopReason = evt.delta.stop_reason;
+          }
           if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
             if (!aiContentEl) { hideTyping(); aiContentEl = renderAiMsg('', searchUsed); aiContentEl.classList.add('streaming'); }
             fullResponse += evt.delta.text;
@@ -1237,6 +1262,19 @@ async function sendMessage() {
     conv.updated = Date.now();
     saveConversations();
     renderHistory();
+
+    // Warn if the response was cut off by the token limit, offer to continue
+    if (stopReason === 'max_tokens') {
+      const warn = document.createElement('div');
+      warn.style.cssText = 'margin:4px 0 0;padding:8px 12px;background:var(--accent-bg);color:var(--accent-text);border-radius:8px;font-size:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+      warn.innerHTML = '<span>The response was long and got cut off.</span>';
+      const contBtn = document.createElement('button');
+      contBtn.textContent = 'Continue →';
+      contBtn.style.cssText = 'background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:var(--font)';
+      contBtn.onclick = () => { warn.remove(); continueResponse(); };
+      warn.appendChild(contBtn);
+      if (aiContentEl) aiContentEl.parentElement.appendChild(warn);
+    }
 
   } catch(e) {
     hideTyping();
@@ -1423,7 +1461,7 @@ function downloadArtifact() {
 // Detect if Claude's response should be an artifact
 // Returns { isArtifact, title, content, type, chatContent } or null
 function detectArtifact(text) {
-  // Look for explicit XML artifact tags first (we'll ask Claude to use these)
+  // Complete artifact (with closing tag)
   const xmlMatch = text.match(/<artifact\s+title="([^"]*)"(?:\s+type="([^"]*)")?>([\s\S]*?)<\/artifact>/i);
   if (xmlMatch) {
     return {
@@ -1431,7 +1469,19 @@ function detectArtifact(text) {
       title: xmlMatch[1] || 'Artifact',
       type: xmlMatch[2] || 'markdown',
       content: xmlMatch[3].trim(),
-      chatContent: text.replace(xmlMatch[0], '').trim() || 'Here\'s your artifact 👆'
+      chatContent: text.replace(xmlMatch[0], '').trim() || 'Here\'s your artifact 👇'
+    };
+  }
+  // Incomplete artifact (opening tag but no close — response was cut off or still has content)
+  const openMatch = text.match(/<artifact\s+title="([^"]*)"(?:\s+type="([^"]*)")?>([\s\S]*)$/i);
+  if (openMatch && openMatch[3].trim()) {
+    return {
+      isArtifact: true,
+      incomplete: true,
+      title: openMatch[1] || 'Artifact',
+      type: openMatch[2] || 'markdown',
+      content: openMatch[3].trim(),
+      chatContent: text.slice(0, openMatch.index).trim() || 'Here\'s your document 👇'
     };
   }
   return null;
